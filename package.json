@@ -1,0 +1,25 @@
+{
+	"name": "example-bare",
+	"type": "module",
+	"scripts": {
+		"dev": "vinxi dev",
+		"build": "vinxi build",
+		"start": "vinxi start",
+		"check": "biome check && tsc --noEmit",
+		"fix": "biome check --fix"
+	},
+	"dependencies": {
+		"@solidjs/start": "^1.1.0",
+		"ag-grid-community": "^33.2.3",
+		"solid-js": "^1.9.5",
+		"vinxi": "^0.5.3"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "2.0.0-beta.1",
+		"typescript": "^5.8.3"
+	},
+	"engines": {
+		"node": ">=22"
+	},
+	"packageManager": "pnpm@10.8.0+sha512.0e82714d1b5b43c74610193cb20734897c1d00de89d0e18420aebc5977fa13d780a9cb05734624e81ebd81cc876cd464794850641c48b9544326b5622ca29971"
+}
