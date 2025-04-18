@@ -1,7 +1,9 @@
-import { onMount } from "solid-js";
+import { onMount, Suspense } from "solid-js";
+import { RelayEnvironmentProvider } from "solid-relay";
 import { createGrid } from "~/lib/grid";
+import { createEnvironment } from "~/RelayEnvironment";
 
-export default function App() {
+function Page() {
 	const grid = (<div style={{ height: "100%" }} />) as HTMLDivElement;
 
 	onMount(() => {
@@ -23,5 +25,21 @@ export default function App() {
 		});
 	});
 
-	return <main style={{ padding: "12px", height: "100vh" }}>{grid}</main>;
+	return (
+		<main style={{ padding: "12px", height: "100vh" }}>
+			{grid}
+		</main>
+	);
+}
+
+export default function App() {
+	const environment = createEnvironment();
+
+	return (
+		<RelayEnvironmentProvider environment={environment}>
+			<Suspense>
+				<Page />
+			</Suspense>
+		</RelayEnvironmentProvider>
+	);
 }
