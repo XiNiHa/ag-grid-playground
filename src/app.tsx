@@ -1,6 +1,7 @@
 import { graphql } from "relay-runtime";
-import { createEffect, Suspense } from "solid-js";
+import { createEffect, Suspense, untrack } from "solid-js";
 import {
+	createMutation,
 	createPaginationFragment,
 	createPreloadedQuery,
 	loadQuery,
@@ -10,6 +11,7 @@ import {
 import { createGrid } from "~/lib/grid";
 import { createEnvironment } from "~/RelayEnvironment";
 import type { appQuery } from "./__generated__/appQuery.graphql";
+import type { appUpdateRepoNameMutation } from "./__generated__/appUpdateRepoNameMutation.graphql";
 import type { appViewerFragment$key } from "./__generated__/appViewerFragment.graphql";
 
 const AppQuery = graphql`
@@ -35,6 +37,7 @@ function Page(props: { $query: PreloadedQuery<appQuery> }) {
 				edges {
 					cursor
 					node {
+						id
 						name
 						stargazerCount
 						createdAt
@@ -48,16 +51,75 @@ function Page(props: { $query: PreloadedQuery<appQuery> }) {
 	`,
 		() => query.latest?.viewer as appViewerFragment$key,
 	);
-	const grid = (<div style={{ height: "100%" }} />) as HTMLDivElement;
+	const [updateRepoName, isUpdatingRepoName] =
+		createMutation<appUpdateRepoNameMutation>(graphql`
+		mutation appUpdateRepoNameMutation($id: ID!, $newName: String!) @raw_response_type {
+			updateRepository(input: { repositoryId: $id, name: $newName }) {
+				repository {
+					id
+					name
+				}
+			}
+		}
+	`);
+
+	type Data = NonNullable<
+		NonNullable<
+			NonNullable<typeof viewer.latest>["repositories"]["edges"]
+		>[number]
+	>;
+
+	const gridEl = (<div style={{ height: "100%" }} />) as HTMLDivElement;
 
 	createEffect(() => {
 		if (!viewer.latest) return;
 
-		createGrid<
-			NonNullable<NonNullable<typeof viewer.latest.repositories.edges>[number]>
-		>(grid, {
+		createGrid<Data>(gridEl, {
 			columnDefs: [
-				{ field: "node.name", headerName: "Name" },
+				{
+					field: "node.name",
+					headerName: "Name",
+					editable: true,
+					valueSetter: (params) => {
+						updateRepoName({
+							variables: {
+								id: params.data.node!.id,
+								newName: params.newValue,
+							},
+							optimisticResponse: {
+								updateRepository: {
+									repository: {
+										id: params.data.node!.id,
+										name: params.newValue,
+									},
+								},
+							},
+							onCompleted(_, payloadError) {
+								if (payloadError?.length) {
+									console.log(payloadError);
+									params.node?.updateData({
+										...params.data,
+										node: {
+											...params.data.node!,
+											name: params.oldValue,
+										},
+									});
+								}
+							},
+							onError(error) {
+								console.log(error);
+								params.node?.updateData({
+									...params.data,
+									node: {
+										...params.data.node!,
+										name: params.oldValue,
+									},
+								});
+							},
+						});
+						return true;
+					},
+				},
 				{ field: "node.isFork", headerName: "Fork?", cellDataType: "boolean" },
 				{ field: "node.stargazerCount", headerName: "Stars" },
 				{
@@ -77,6 +139,9 @@ function Page(props: { $query: PreloadedQuery<appQuery> }) {
 			autoSizeStrategy: {
 				type: "fitCellContents",
 				colIds: ["node.isFork", "node.stargazerCount"],
+			},
+			onCellEditingStarted(event) {
+				if (untrack(isUpdatingRepoName)) event.api.stopEditing();
 			},
 			getRowId: ({ data }) => data.cursor,
 			rowModelType: "infinite",
@@ -111,7 +176,7 @@ function Page(props: { $query: PreloadedQuery<appQuery> }) {
 		});
 	});
 
-	return <main style={{ padding: "12px", height: "100vh" }}>{grid}</main>;
+	return <main style={{ padding: "12px", height: "100vh" }}>{gridEl}</main>;
 }
 
 export default function App() {
