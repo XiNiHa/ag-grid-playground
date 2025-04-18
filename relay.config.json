@@ -1,7 +1,10 @@
 {
+	"$schema": "./node_modules/relay-compiler/relay-compiler-config-schema.json",
 	"src": "./src",
 	"language": "typescript",
 	"schema": "./schema.graphql",
 	"eagerEsModules": true,
-	"exclude": ["**/node_modules/**", "**/__generated__/**"]
+	"customScalarTypes": {
+		"DateTime": "string"
+	}
 }

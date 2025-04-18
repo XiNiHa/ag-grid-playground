@@ -15,11 +15,13 @@ const fetchFn = async (params: RequestParameters, variables: Variables) => {
 		body: JSON.stringify({ query: params.text, variables }),
 	});
 
-	return response.json();
+	return await response.json();
 };
 
 export function createEnvironment(): IEnvironment {
-	const network = Network.create(fetchFn);
+	const network = Network.create((params, variables) => {
+		return fetchFn(params, variables);
+	});
 	const store = new Store(new RecordSource());
 	return new Environment({ store, network });
 }
