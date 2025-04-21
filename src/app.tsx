@@ -92,6 +92,7 @@ function Page(props: { $query: PreloadedQuery<appQuery> }) {
 				{
 					field: "node.name",
 					headerName: "Name",
+					lockPosition: "left",
 					sortable: true,
 					editable: true,
 					valueSetter: (params) => {
@@ -156,6 +157,7 @@ function Page(props: { $query: PreloadedQuery<appQuery> }) {
 			],
 			defaultColDef: {
 				sortable: false,
+				lockVisible: true,
 				flex: 1,
 			},
 			autoSizeStrategy: {
