@@ -11,6 +11,7 @@
 	"dependencies": {
 		"@solidjs/start": "^1.1.0",
 		"ag-grid-community": "^33.2.3",
+		"dequal": "^2.0.3",
 		"relay-compiler": "0.0.0-main-3dba6535",
 		"relay-runtime": "0.0.0-main-3dba6535",
 		"solid-js": "^1.9.5",

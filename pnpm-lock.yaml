@@ -14,6 +14,9 @@ importers:
       ag-grid-community:
         specifier: ^33.2.3
         version: 33.2.4
+      dequal:
+        specifier: ^2.0.3
+        version: 2.0.3
       relay-compiler:
         specifier: 0.0.0-main-3dba6535
         version: 0.0.0-main-3dba6535

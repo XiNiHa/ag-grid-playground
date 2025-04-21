@@ -1,5 +1,6 @@
+import { dequal } from "dequal";
 import { graphql } from "relay-runtime";
-import { createEffect, Suspense, untrack } from "solid-js";
+import { createEffect, createSignal, Suspense, untrack } from "solid-js";
 import {
 	createMutation,
 	createPaginationFragment,
@@ -13,6 +14,10 @@ import { createEnvironment } from "~/RelayEnvironment";
 import type { appQuery } from "./__generated__/appQuery.graphql";
 import type { appUpdateRepoNameMutation } from "./__generated__/appUpdateRepoNameMutation.graphql";
 import type { appViewerFragment$key } from "./__generated__/appViewerFragment.graphql";
+import type {
+	RepositoryOrder,
+	ViewerRepositoriesPaginationQuery,
+} from "./__generated__/ViewerRepositoriesPaginationQuery.graphql";
 
 const AppQuery = graphql`
 	query appQuery {
@@ -24,15 +29,19 @@ const AppQuery = graphql`
 
 function Page(props: { $query: PreloadedQuery<appQuery> }) {
 	const query = createPreloadedQuery(AppQuery, () => props.$query);
-	const viewer = createPaginationFragment(
+	const viewer = createPaginationFragment<
+		ViewerRepositoriesPaginationQuery,
+		appViewerFragment$key
+	>(
 		graphql`
 		fragment appViewerFragment on User
 		@refetchable(queryName: "ViewerRepositoriesPaginationQuery")
 		@argumentDefinitions(
 	  	count: { type: "Int", defaultValue: 50 },
 			cursor: { type: "String" },
+			orderBy: { type: "RepositoryOrder", defaultValue: { field: STARGAZERS, direction: DESC } }
 		) {
-			repositories(first: $count, after: $cursor, orderBy: { field: STARGAZERS, direction: DESC }, ownerAffiliations: [OWNER])
+			repositories(first: $count, after: $cursor, orderBy: $orderBy, ownerAffiliations: [OWNER])
 			@connection(key: "ViewerConnection__repositories") {
 				edges {
 					cursor
@@ -49,7 +58,7 @@ function Page(props: { $query: PreloadedQuery<appQuery> }) {
 			}
 		}
 	`,
-		() => query.latest?.viewer as appViewerFragment$key,
+		() => query.latest?.viewer,
 	);
 	const [updateRepoName, isUpdatingRepoName] =
 		createMutation<appUpdateRepoNameMutation>(graphql`
@@ -62,6 +71,10 @@ function Page(props: { $query: PreloadedQuery<appQuery> }) {
 			}
 		}
 	`);
+	const [orderBy, setOrderBy] = createSignal<RepositoryOrder | undefined>({
+		field: "STARGAZERS",
+		direction: "DESC",
+	});
 
 	type Data = NonNullable<
 		NonNullable<
@@ -79,6 +92,7 @@ function Page(props: { $query: PreloadedQuery<appQuery> }) {
 				{
 					field: "node.name",
 					headerName: "Name",
+					sortable: true,
 					editable: true,
 					valueSetter: (params) => {
 						updateRepoName({
@@ -121,19 +135,27 @@ function Page(props: { $query: PreloadedQuery<appQuery> }) {
 					},
 				},
 				{ field: "node.isFork", headerName: "Fork?", cellDataType: "boolean" },
-				{ field: "node.stargazerCount", headerName: "Stars" },
+				{
+					field: "node.stargazerCount",
+					headerName: "Stars",
+					sortable: true,
+					sort: "desc",
+				},
 				{
 					field: "node.createdAt",
 					headerName: "Created",
+					sortable: true,
 					valueFormatter: (params) => new Date(params.value).toLocaleString(),
 				},
 				{
 					field: "node.updatedAt",
 					headerName: "Updated",
+					sortable: true,
 					valueFormatter: (params) => new Date(params.value).toLocaleString(),
 				},
 			],
 			defaultColDef: {
+				sortable: false,
 				flex: 1,
 			},
 			autoSizeStrategy: {
@@ -148,7 +170,32 @@ function Page(props: { $query: PreloadedQuery<appQuery> }) {
 			cacheBlockSize: 50,
 			datasource: {
 				rowCount: viewer.latest?.repositories.totalCount,
-				getRows(params) {
+				async getRows(params) {
+					const sortModel = params.sortModel[0];
+					const newOrderBy = sortModel && {
+						field:
+							(
+								{
+									"node.name": "NAME",
+									"node.stargazerCount": "STARGAZERS",
+									"node.createdAt": "CREATED_AT",
+									"node.updatedAt": "UPDATED_AT",
+								} as const
+							)[sortModel.colId] ?? "NAME",
+						direction: ({ asc: "ASC", desc: "DESC" } as const)[sortModel.sort],
+					};
+
+					if (!dequal(newOrderBy, untrack(orderBy))) {
+						setOrderBy(newOrderBy);
+						await new Promise<void>((resolve) => {
+							viewer.refetch(
+								{ orderBy: newOrderBy },
+								{ onComplete: (error) => resolve() },
+							);
+						});
+						await Promise.resolve();
+					}
+
 					const count = params.endRow - params.startRow;
 					const existingRows = viewer.latest?.repositories.edges?.length ?? 0;
 					if (params.endRow <= existingRows) {
