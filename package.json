@@ -9,19 +9,19 @@
 		"fix": "biome check --fix"
 	},
 	"dependencies": {
-		"@solidjs/start": "^1.1.0",
-		"ag-grid-community": "^33.2.3",
+		"@solidjs/start": "^1.1.4",
+		"ag-grid-community": "^33.3.0",
 		"dequal": "^2.0.3",
-		"relay-compiler": "0.0.0-main-3dba6535",
-		"relay-runtime": "0.0.0-main-3dba6535",
-		"solid-js": "^1.9.5",
-		"solid-relay": "1.0.0-beta.9",
-		"vinxi": "^0.5.3"
+		"relay-compiler": "^19.0.0",
+		"relay-runtime": "^19.0.0",
+		"solid-js": "^1.9.7",
+		"solid-relay": "1.0.0-beta.10",
+		"vinxi": "^0.5.6"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.0.0-beta.1",
-		"@types/node": "^22.14.1",
-		"@types/relay-runtime": "^18.2.5",
+		"@types/node": "^22.15.21",
+		"@types/relay-runtime": "^19.0.1",
 		"typescript": "^5.8.3",
 		"vite-plugin-cjs-interop": "^2.2.0",
 		"vite-plugin-relay-lite": "^0.11.0"
